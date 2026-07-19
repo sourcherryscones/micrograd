@@ -29,7 +29,7 @@ def compare_to_torch(name, build_mine, build_torch, inits):
     print(f"\n{name}")
     vs = [Value(v) for v in inits]
     out = build_mine(*vs)
-    out.backward()
+    out.backwards()
 
     ts = [torch.tensor(float(v), requires_grad=True, dtype=torch.double) for v in inits]
     tout = build_torch(*ts)
@@ -129,17 +129,17 @@ compare_to_torch("9. THE GAUNTLET (every op, heavy reuse)",
 print("\n10. zero_grad")
 a = Value(2.0)
 o1 = a * 10.0
-o1.backward()
+o1.backwards()
 check("1st backward", a.grad, 10.0)
 a.zero_grad()
 o2 = a * 100.0
-o2.backward()
+o2.backwards()
 check("2nd backward after zero_grad", a.grad, 100.0)
 
 # and prove it breaks WITHOUT the reset
 b = Value(2.0)
-(b * 10.0).backward()
-(b * 100.0).backward()          # no zero_grad on purpose
+(b * 10.0).backwards()
+(b * 100.0).backwards()          # no zero_grad on purpose
 print(f"  (sanity) no-reset gives {b.grad:+.1f} -- should be 110, i.e. accumulated. "
       f"{'correct accumulation behavior' if abs(b.grad - 110.0) < 1e-9 else 'UNEXPECTED'}")
 
@@ -150,7 +150,7 @@ print("\n11. numerical gradient check (central difference)")
 def grad_check(f, x_val, h=1e-5, tol=1e-4):
     x = Value(x_val)
     y = f(x)
-    y.backward()
+    y.backwards()
     analytic = x.grad
     numeric = (f(Value(x_val + h)).data - f(Value(x_val - h)).data) / (2 * h)
     return analytic, numeric, abs(analytic - numeric) < tol
@@ -186,7 +186,7 @@ for step in range(200):
     loss = sum(((p - y) ** 2 for p, y in zip(preds, ys)), start=Value(0.0)) 
     # initially this sum thing was erroring because sum() returns an int not a Value object, so initialized start so that overloaded + is used
     model.zero_grad()
-    loss.backward()
+    loss.backwards()
     for p in model.parameters():
         p.data -= 0.05 * p.grad
 

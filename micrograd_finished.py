@@ -78,7 +78,7 @@ class Value:
         out._backward = _backwards
         return out
 
-    def backward(self):
+    def backwards(self):
         def toposort(g):
             # how do you toposort again??
             # start by dfs-ing
@@ -142,43 +142,6 @@ class Value:
     def __rsub__(self, other):     return (-self) + other      # for  2 - a
     def __rtruediv__(self, other): return (self**-1) * other    # for  2 / a
 
-
-
-# trying to visualize the graph using just the graphviz docs lmao
-
-def get_V_and_E_from_value_obj(v):
-    # wait gang this is just bf/dfs?? no one gaf?? just add yourself and then add your children
-    V = set()
-    E = set()
-    
-    def add_node_and_kids(vertex):
-        if vertex not in V:
-            V.add(vertex)
-            for kid in vertex._prev:
-                E.add((kid, vertex))
-                add_node_and_kids(kid)
-    
-    add_node_and_kids(v)
-    return V, E
-
-# this part i did refer to the draw_dot function but only for syntax!
-def draw_expr_graph(value):
-    g = Digraph(format='svg', graph_attr={'rankdir': 'LR'})
-    vertices, edges = get_V_and_E_from_value_obj(value)
-    for vertex in vertices:
-        uid = str(id(vertex))
-        g.node(name = uid, label = "{ %s | data %.4f | grad %.4f }" % (vertex.label, vertex.data, vertex.grad), shape='record')
-        if vertex._op:
-            g.node(name=uid + vertex._op, label=vertex._op)
-            g.edge(uid + vertex._op, uid)
-    
-    for source, target in edges:
-        if target._op:
-            g.edge(str(id(source)), str(id(target)) + target._op)
-    
-    return g
-        
-
 # just following along w/ my goat andrej
 class Neuron:
     def __init__(self, nin, nonlin=True):
@@ -205,7 +168,7 @@ class Layer:
 class MLP:
     def __init__(self, nin, nouts):
         sz = [nin] + nouts
-        self.layers = [Layer(sz[i], sz[i+1]) for i in range(len(nouts))] # wow now we stack layers!!
+        self.layers = [Layer(sz[i], sz[i+1], nonlin=(i!= len(nouts) - 1)) for i in range(len(nouts))] # wow now we stack layers!!
     def __call__(self, x):
         for layer in self.layers:
             x = layer(x)
